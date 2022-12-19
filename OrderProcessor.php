@@ -30,7 +30,7 @@ class OrderProcessor  {
      
     }
 
-    protected function toCreateOrder(Order $order) {
+    protected function toCreateOrder(Order $order) : Order {
         return Order::create([
             'account' => optional($order->account)->id,
             'amount' => $order->amount
