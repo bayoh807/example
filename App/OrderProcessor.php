@@ -4,12 +4,16 @@ namespace App;
 
 use App\Models\Order;
 use DB;
+use Exception;
+
+use Contracts\BillerInterface;
 
 class OrderProcessor  {
 
     private $biller;
 
-    public function setBiller(BillerInterface $biller) : self{
+    public function setBiller(BillerInterface $biller) : self
+    {
         $this->biller = $biller;
         return $this;
     }
@@ -27,20 +31,12 @@ class OrderProcessor  {
                 return $newOrder;
             }
         });
-     
     }
-
-    protected function toCreateOrder(Order $order) : Order {
-        return Order::create([
-            'account' => optional($order->account)->id,
-            'amount' => $order->amount
-        ]);
+    protected function hasRecentOrder(Order $order,int $minutes = 5) : bool 
+    {
+        return $this->getRecentOrderCount($order)  > 0 ;
     }
-
-    protected function toBill(Order $order) : void  {
-        $this->biller->bill($order->account->id, $order->amount);
-    }
-
+    
     protected function getRecentOrderCount(Order $order,int $minutes = 5) : int
     {
         $timestamp = Carbon::now()->subMinutes($minutes);
@@ -49,10 +45,16 @@ class OrderProcessor  {
             ->where('created_at', '>=', $timestamp)
             ->count();
     }
-
-    protected function hasRecentOrder(Order $order,int $minutes = 5) : bool {
-
-        return $this->getRecentOrderCount($order)  > 0 ;
+    protected function toCreateOrder(Order $order) : Order 
+    {
+        return Order::create([
+            'account' => optional($order->account)->id,
+            'amount' => $order->amount
+        ]);
     }
 
+    protected function toBill(Order $order) : void  
+    {
+        $this->biller->bill($order->account->id, $order->amount);
+    }
 }
