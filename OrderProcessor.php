@@ -21,7 +21,7 @@ class OrderProcessor  {
         }
 
         return DB::transaction(function () use ($order) {
-            // 確定建立好新訂單在做金流請款
+            // 確定建立好新訂單，再做金流請款
             if($newOrder = $this->toCreateOrder($order)) {
                 $this->toBill($newOrder);
                 return $newOrder;
