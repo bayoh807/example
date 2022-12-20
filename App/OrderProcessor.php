@@ -32,6 +32,7 @@ class OrderProcessor  {
             }
         });
     }
+    
     private function setBiller(BillerInterface $biller) : self
     {
         $this->biller = $biller;

@@ -191,4 +191,88 @@ class OrderUnitTest extends TestCase
         ]);
 
     }
+
+    /**
+     * 五分鐘內重複下訂
+     * @test
+     * @return void
+     */
+    public function process_duplicate() : void 
+    {
+        //arrange
+        $member_data = [
+            'account' => $this->faker->mail
+        ];
+        $order_data = [
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(1)
+            ],
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(6)
+            ],
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(10)
+            ]
+        ];
+        $member = Member::create($member_data);
+        $member->toOrders->createMany($order_data);
+        $order = $member->toOrders()->first();
+ 
+
+        //act
+
+        $this->orderProcessor->process($this->service,$order,rand(500,1000));
+
+        //assert
+        $this->assertModelExists($member);
+        $this->assertDatabaseHas('members', [
+            'account' => $member_data['account'],
+        ]);
+        $this->assertDatabaseCount('orders', count($order_data));
+        $this->fail('Duplicate order likely.');
+
+    }
+
+    /**
+     * 
+     * @test
+     * @return void
+     */
+    public function process_success() : void 
+    {
+        //arrange
+        $member_data = [
+            'account' => $this->faker->mail
+        ];
+        $order_data = 
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(10)
+            ];
+        $member = Member::create($member_data);
+        $oldOrder  = $member->toOrders->create($order_data); 
+
+        //act
+        $order  = $this->orderProcessor->process($this->service,$oldOrder,rand(500,1000));
+
+        //assert
+        $this->assertModelExists($member);
+        $this->assertDatabaseHas('members', [
+            'account' => $member_data['account'],
+        ]);
+        $this->assertModelExists($order);
+        $this->assertDatabaseCount('orders', 2);
+        $this->assertDatabaseHas('orders', [
+            'order_no' => $order->order_no
+        ]);
+
+
+    }
 }
