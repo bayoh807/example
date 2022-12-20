@@ -9,6 +9,7 @@ use Faker\Factory as Faker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 use App\OrderProcessor;
+use App\Models\Order;
 
 class OrderUnitTest extends TestCase
 {
@@ -26,23 +27,79 @@ class OrderUnitTest extends TestCase
         $this->service = $this->initMock(BillerService::class);
     }
 
+   
 
     /**
-     * test setBiller of OrderProcessor
      * @test
      * @return void
      */
-    public function setBiller(): void
+    public function hasRecentOrder_true(): void
     {
         //arrange
-        $service = $this->initMock(BillerService::class);
-                
+        $member_data = [
+            'account' => $this->faker->mail
+        ];
+        $order_data = [
+            'order_no' => Str::uuid(),
+            'amount' => rand(500, 1000)
+        ];
+
         //act
-        $this->orderProcessor->setBiller($service);
+        $member = Member::create($member_data);
+        $order = $member->toOrder()->create($order_data);
+
+        $result = $this->orderProcessor->hasRecentOrder($order);
 
         //assert
-        $this->assertTrue($this->orderProcessor->setBiller($this->service));
+        $this->assertModelExists($member);
+        $this->assertModelExists($order);
+        $this->assertDatabaseHas('members', [
+            'account' => $member_data['account'],
+        ]);
+        $this->assertDatabaseHas('orders', [
+            'order_no' => $order_data['order_no'],
+            'amount' => $order_data['amount']
+        ]);
+        $this->assertTrue($result);
+        $this->assertDatabaseCount('orders', 1);
     }
 
 
+    /**
+     * 檢查五分鐘內是否有訂單
+     * @test
+     * @return void
+     */
+    public function hasRecentOrder_false(): void
+    {
+        //arrange
+        $member_data = [
+            'account' => $this->faker->mail
+        ];
+        $order_data = [
+            'order_no' => Str::uuid(),
+            'amount' => rand(500, 1000),
+            'created_at' =>  Carbon::now()->subMinutes(5)
+        ];
+
+        //act
+        $member = Member::create($member_data);
+        $order = $member->toOrder()->create($order_data);
+
+        $result = $this->orderProcessor->hasRecentOrder($order);
+
+        //assert
+        $this->assertModelExists($member);
+        $this->assertDatabaseHas('members', [
+            'account' => $member_data['account'],
+        ]);
+        $this->assertModelExists($order);
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseHas('orders', [
+            'order_no' => $order_data['order_no'],
+            'amount' => $order_data['amount']
+        ]);
+
+        $this->assertTrue($result);
+    }
 }

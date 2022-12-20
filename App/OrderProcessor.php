@@ -34,14 +34,14 @@ class OrderProcessor  {
         return $this;
     }
 
-    protected function hasRecentOrder(Order $order,int $minutes = 5) : bool 
+    protected function hasRecentOrder(Order $order) : bool 
     {
         return $this->getRecentOrderCount($order)  > 0 ;
     }
     
-    protected function getRecentOrderCount(Order $order,int $minutes = 5) : int
+    protected function getRecentOrderCount(Order $order) : int
     {
-        $timestamp = Carbon::now()->subMinutes($minutes);
+        $timestamp = Carbon::now()->subMinutes(5);
 
         return Order::where('account', $order->account->id)
             ->where('created_at', '>=', $timestamp)
