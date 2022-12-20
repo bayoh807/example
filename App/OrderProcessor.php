@@ -13,18 +13,22 @@ class OrderProcessor  {
     private $biller;
 
 
-    public function process(BillerInterface $biller,Order $order) : Order
+    public function process(BillerInterface $biller,Order $order,int $amount) : Order
     {
         $this->setBiller($biller);
         if($this->hasRecentOrder($order)) {
             throw new Exception('Duplicate order likely.');
         }
 
-        return DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($order,$amount) {
             // 確定建立好新訂單，再做金流請款
-            if($newOrder = $this->toCreateOrder($order)) {
+            if($newOrder = $this->toCreateOrder($order->account->id, $amount)) {
                 $this->toBill($newOrder);
                 return $newOrder;
+            } 
+            else 
+            {
+                throw new Exception('Order create fail'); 
             }
         });
     }
@@ -48,11 +52,12 @@ class OrderProcessor  {
             ->count();
     }
 
-    protected function toCreateOrder(Order $order) : Order 
+    protected function toCreateOrder(int $accountId,int $amount) : Order 
     {
         return Order::create([
-            'account' => optional($order->account)->id,
-            'amount' => $order->amount
+            'order_no' => Str::uuid(),
+            'account' =>  $accountId,
+            'amount' => $amount
         ]);
     }
 

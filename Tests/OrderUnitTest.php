@@ -157,4 +157,38 @@ class OrderUnitTest extends TestCase
 
     }
 
+    /**
+     * 建立新訂單
+     * @test
+     * @return void
+     */
+    public function toCreateOrder() : void 
+    {
+        //arrange
+        $member_data = [
+            'account' => $this->faker->mail
+        ];
+        $order_data = [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000)
+        ];
+
+
+        //act
+        $member = Member::create($member_data);
+        
+        $order = $this->orderProcessor->toCreateOrder($member->id,$order_data['amount']);
+
+        //assert
+        $this->assertModelExists($member);
+        $this->assertDatabaseHas('members', [
+            'account' => $member_data['account'],
+        ]);
+        $this->assertModelExists($order);
+        $this->assertDatabaseCount('orders', count($order_data));
+        $this->assertDatabaseHas('orders', [
+            'order_no' => $order->order_no
+        ]);
+
+    }
 }
