@@ -102,4 +102,59 @@ class OrderUnitTest extends TestCase
 
         $this->assertTrue($result);
     }
+
+
+    /**
+     * 檢查五分鐘內訂單數
+     * @test
+     * @return void
+     */
+    public function getRecentOrderCount() : void 
+    {
+        //arrange
+        $member_data = [
+            'account' => $this->faker->mail
+        ];
+        $order_data = [
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(1)
+            ],
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(6)
+            ],
+            [
+                'order_no' => Str::uuid(),
+                'amount' => rand(500, 1000),
+                'created_at' =>  Carbon::now()->subMinutes(10)
+            ]
+        ];
+        $timestamp = Carbon::now()->subMinutes(5);
+
+        //act
+        $member = Member::create($member_data);
+        $member->toOrder()->createMany($order_data);
+
+        $order = $member->toOrder()->firstWhere('created_at', $timestamp);
+        
+        $count = $this->orderProcessor->getRecentOrderCount($order);
+
+        //assert
+        $this->assertModelExists($member);
+        $this->assertDatabaseHas('members', [
+            'account' => $member_data['account'],
+        ]);
+        $this->assertModelExists($order);
+        $this->assertDatabaseCount('orders', count($order_data));
+        $this->assertDatabaseHas('orders', [
+            'order_no' => $order->order_no
+        ]);
+
+        $this->assertEquals(1, $count);
+
+    }
+
 }

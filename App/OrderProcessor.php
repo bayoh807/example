@@ -56,7 +56,7 @@ class OrderProcessor  {
         ]);
     }
 
-    protected function toBill(Order $order) : void  
+    private function toBill(Order $order) : void  
     {
         $this->biller->bill($order->account->id, $order->amount);
     }
