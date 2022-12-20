@@ -12,14 +12,10 @@ class OrderProcessor  {
 
     private $biller;
 
-    public function setBiller(BillerInterface $biller) : self
-    {
-        $this->biller = $biller;
-        return $this;
-    }
 
-    public function process(Order $order) : Order
+    public function process(BillerInterface $biller,Order $order) : Order
     {
+        $this->setBiller($biller);
         if($this->hasRecentOrder($order)) {
             throw new Exception('Duplicate order likely.');
         }
@@ -32,6 +28,12 @@ class OrderProcessor  {
             }
         });
     }
+    private function setBiller(BillerInterface $biller) : self
+    {
+        $this->biller = $biller;
+        return $this;
+    }
+
     protected function hasRecentOrder(Order $order,int $minutes = 5) : bool 
     {
         return $this->getRecentOrderCount($order)  > 0 ;
@@ -45,6 +47,7 @@ class OrderProcessor  {
             ->where('created_at', '>=', $timestamp)
             ->count();
     }
+
     protected function toCreateOrder(Order $order) : Order 
     {
         return Order::create([
